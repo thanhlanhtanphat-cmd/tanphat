@@ -300,14 +300,13 @@ export default function App() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-[#9d171a] rounded-full flex items-center justify-center text-white shrink-0">
-              <Building2 size={32} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#9d171a]">TAN PHAT</h1>
-              <p className="text-sm font-semibold tracking-[0.2em] text-[#333]">TOTE & BUILDING</p>
-            </div>
+          <div className="flex items-center">
+            <img 
+              src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+              alt="Tân Phát Logo" 
+              className="h-16 md:h-20 w-auto object-contain"
+              referrerPolicy="no-referrer"
+            />
           </div>
           
           <div className="hidden lg:block text-center flex-1 mx-8 overflow-hidden">
@@ -654,13 +653,13 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Company Info */}
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#9d171a] rounded-full flex items-center justify-center text-white shrink-0">
-                <Building2 size={24} />
-              </div>
-              <div>
-                <h4 className="font-bold text-[#333] uppercase">TÂN PHÁT TOTE & BUILDING</h4>
-              </div>
+            <div className="flex items-center">
+              <img 
+                src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+                alt="Tân Phát Logo" 
+                className="h-12 w-auto object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div className="space-y-3 text-sm text-gray-500">
               <div className="flex items-start gap-3">
@@ -4600,8 +4599,15 @@ function LoginModal({ isOpen, onClose, onLogin, data, setData }: any) {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
-        <div className="bg-[#9d171a] p-6 text-white text-center">
-          <Building2 size={48} className="mx-auto mb-4" />
+        <div className="bg-[#9d171a] p-8 text-white text-center">
+          <div className="bg-white p-4 rounded-xl inline-block mb-6 shadow-lg">
+            <img 
+              src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+              alt="Tân Phát Logo" 
+              className="h-12 w-auto object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
           <h3 className="text-xl font-bold uppercase tracking-wider">Đăng nhập hệ thống</h3>
           <p className="text-sm opacity-80 mt-1">Truy cập quyền quản trị viên</p>
         </div>
@@ -4681,11 +4687,15 @@ function GoogleDriveTab({
       const data = await listDriveFolders(token);
       setFolders(data.files || []);
       setNeedsAuth(false);
+      setError(null);
     } catch (err: any) {
       console.error('Error fetching folders:', err);
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('invalid authentication credentials')) {
         clearAccessToken();
         setNeedsAuth(true);
+        setUser(null);
+      } else {
+        setError('Không thể tải danh sách thư mục. Vui lòng kiểm tra kết nối mạng.');
       }
     }
   };
@@ -4704,10 +4714,12 @@ function GoogleDriveTab({
       setNeedsAuth(false);
     } catch (err: any) {
       console.error('Error fetching Drive files:', err);
-      setError('Không thể lấy danh sách tập tin từ Google Drive. Vui lòng thử lại.');
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('invalid authentication credentials')) {
         clearAccessToken();
         setNeedsAuth(true);
+        setUser(null);
+      } else {
+        setError('Không thể lấy danh sách tập tin từ Google Drive. Vui lòng thử lại.');
       }
     } finally {
       setLoading(false);
