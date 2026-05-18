@@ -310,7 +310,7 @@ export default function App() {
           </div>
           
           <div className="hidden lg:block text-center flex-1 mx-8 overflow-hidden">
-            <h2 className="text-xl font-bold text-[#9d171a] uppercase truncate">KHÔNG NGỪNG PHÁT TRIỂN - KHÔNG NGỪNG VƯƠN XA</h2>
+            <h2 className="text-xl font-bold text-[#9d171a] uppercase truncate h-[35px]">KHÔNG NGỪNG PHÁT TRIỂN - KHÔNG NGỪNG VƯƠN XA</h2>
             <div className="w-48 h-1 bg-gradient-to-r from-transparent via-[#9d171a] to-transparent mx-auto mt-2"></div>
             <div className="w-2 h-2 rounded-full bg-[#9d171a] mx-auto -mt-1.5"></div>
           </div>
@@ -361,7 +361,7 @@ export default function App() {
             <Package size={24} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-[#333] uppercase">Danh sách sản phẩm công khai</h3>
+            <h3 className="text-[25px] font-bold text-[#333] uppercase h-[31px]">Danh sách sản phẩm công khai</h3>
             <p className="text-sm text-gray-500">Danh sách sản phẩm được công khai bởi Tân Phát Tote & Building</p>
           </div>
         </div>
