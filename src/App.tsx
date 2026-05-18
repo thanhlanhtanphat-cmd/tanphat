@@ -2054,7 +2054,7 @@ function AdminDashboard({
                             <td className="px-5 py-4 text-center border-r border-gray-50">
                               <div className="flex flex-col items-center gap-1.5">
                                 <a 
-                                  href={category.publicLink || `${window.location.origin}/?category=${encodeURIComponent(category.name)}`}
+                                  href={category.publicLink || `https://tanphat-tawny.vercel.app/?category=${encodeURIComponent(category.name)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-all uppercase"
@@ -2064,7 +2064,7 @@ function AdminDashboard({
                                 </a>
                                 <button 
                                   onClick={() => {
-                                    const link = category.publicLink || `${window.location.origin}/?category=${encodeURIComponent(category.name)}`;
+                                    const link = category.publicLink || `https://tanphat-tawny.vercel.app/?category=${encodeURIComponent(category.name)}`;
                                     navigator.clipboard.writeText(link);
                                     alert('Đã sao chép link công khai!');
                                   }}
@@ -3117,7 +3117,7 @@ function CategoryFormModal({ isOpen, onClose, onSave, editingCategory, selectedD
     }
     try {
       // Create a search link or deep link
-      const publicSearchLink = `${window.location.origin}/?category=${encodeURIComponent(formData.name)}`;
+      const publicSearchLink = `https://tanphat-tawny.vercel.app/?category=${encodeURIComponent(formData.name)}`;
       const qrDataUrl = await QRCode.toDataURL(publicSearchLink, {
         width: 400,
         margin: 2
@@ -3188,7 +3188,7 @@ function CategoryFormModal({ isOpen, onClose, onSave, editingCategory, selectedD
                 type="text" 
                 value={formData.publicLink}
                 onChange={(e) => setFormData({ ...formData, publicLink: e.target.value })}
-                placeholder="https://catalog.example.com?category=Sơn"
+                placeholder="https://tanphat-tawny.vercel.app/?category=Sơn"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9d171a] transition-all text-xs text-blue-600"
               />
             </div>
