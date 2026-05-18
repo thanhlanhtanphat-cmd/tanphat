@@ -125,6 +125,8 @@ export default function App() {
   const [accounts, setAccounts] = useState<AdminAccount[]>(INITIAL_ACCOUNTS);
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<string>(() => localStorage.getItem('selectedDriveFolder') || '');
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [zoomQrCode, setZoomQrCode] = useState<string | null>(null);
+  const [zoomTitle, setZoomTitle] = useState<string>('Xem ảnh');
 
   useEffect(() => {
     localStorage.setItem('selectedDriveFolder', selectedDriveFolder);
@@ -285,6 +287,10 @@ export default function App() {
         setCurrentUser={setCurrentUser}
         selectedDriveFolder={selectedDriveFolder}
         setSelectedDriveFolder={setSelectedDriveFolder}
+        zoomQrCode={zoomQrCode}
+        setZoomQrCode={setZoomQrCode}
+        zoomTitle={zoomTitle}
+        setZoomTitle={setZoomTitle}
       />
     );
   }
@@ -479,7 +485,11 @@ export default function App() {
                             <img 
                               src={product.image} 
                               alt={product.name} 
-                              className="w-12 h-12 object-cover rounded shadow-sm group-hover:scale-110 transition-transform cursor-pointer"
+                              className="w-12 h-12 object-cover rounded shadow-sm group-hover:scale-110 transition-transform cursor-zoom-in"
+                              onClick={() => {
+                                setZoomQrCode(product.image || null);
+                                setZoomTitle('Hình ảnh sản phẩm');
+                              }}
                             />
                           ) : (
                             <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-300">
@@ -539,7 +549,15 @@ export default function App() {
                         )}
                         <td className="px-4 py-3 text-center">
                           {product.qrCode ? (
-                            <img src={product.qrCode} alt="QR" className="w-10 h-10 mx-auto" />
+                            <img 
+                              src={product.qrCode} 
+                              alt="QR" 
+                              className="w-10 h-10 mx-auto cursor-zoom-in hover:scale-110 transition-transform" 
+                              onClick={() => {
+                                setZoomQrCode(product.qrCode || null);
+                                setZoomTitle('Mã QR sản phẩm');
+                              }}
+                            />
                           ) : (
                             <div className="w-10 h-10 mx-auto bg-gray-50 flex items-center justify-center text-gray-200">
                               <QrCode size={14} />
@@ -720,6 +738,13 @@ export default function App() {
         title="Xác nhận xóa"
         message={confirmConfig.message}
       />
+
+      <QRZoomModal 
+        isOpen={!!zoomQrCode}
+        onClose={() => setZoomQrCode(null)}
+        qrCode={zoomQrCode || ''}
+        title={zoomTitle}
+      />
     </div>
   );
 }
@@ -742,7 +767,11 @@ function AdminDashboard({
   currentUser, 
   setCurrentUser,
   selectedDriveFolder,
-  setSelectedDriveFolder
+  setSelectedDriveFolder,
+  zoomQrCode,
+  setZoomQrCode,
+  zoomTitle,
+  setZoomTitle
 }: any) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('Tổng quan');
@@ -1519,7 +1548,14 @@ function AdminDashboard({
           {activeTab === 'Tổng quan' ? (
             <DashboardTab products={products} categories={categories} suppliers={suppliers} orders={orders} />
           ) : activeTab === 'Kho hàng' ? (
-            <InventoryTab products={filteredProducts} paginatedProducts={paginatedProducts} filters={filters} setFilters={setFilters} />
+            <InventoryTab 
+              products={filteredProducts} 
+              paginatedProducts={paginatedProducts} 
+              filters={filters} 
+              setFilters={setFilters} 
+              setZoomQrCode={setZoomQrCode}
+              setZoomTitle={setZoomTitle}
+            />
           ) : activeTab === 'Cài đặt' ? (
             <SettingsTab accounts={accounts} setAccounts={setAccounts} currentUser={currentUser} setCurrentUser={setCurrentUser} />
           ) : activeTab === 'Google Drive' ? (
@@ -2046,7 +2082,15 @@ function AdminDashboard({
                             </td>
                             <td className="px-5 py-4 text-center border-r border-gray-50">
                               {category.qrCode ? (
-                                <img src={category.qrCode} alt="QR" className="w-10 h-10 mx-auto rounded border border-gray-100 p-0.5" />
+                                <img 
+                                  src={category.qrCode} 
+                                  alt="QR" 
+                                  className="w-10 h-10 mx-auto rounded border border-gray-100 p-0.5 cursor-zoom-in hover:scale-110 transition-transform" 
+                                  onClick={() => {
+                                    setZoomQrCode(category.qrCode || null);
+                                    setZoomTitle('Mã QR Danh Mục');
+                                  }}
+                                />
                               ) : (
                                 <span className="text-[10px] text-gray-300">Chưa có</span>
                               )}
@@ -2149,7 +2193,15 @@ function AdminDashboard({
                           <td className="px-5 py-4 border-r border-gray-50">
                             <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden mx-auto p-1 shadow-sm">
                               {product.image ? (
-                                <img src={product.image} alt="" className="w-full h-full object-cover rounded-md group-hover:scale-110 transition-transform" />
+                                <img 
+                                  src={product.image} 
+                                  alt="" 
+                                  className="w-full h-full object-cover rounded-md group-hover:scale-110 transition-transform cursor-zoom-in" 
+                                  onClick={() => {
+                                    setZoomQrCode(product.image || null);
+                                    setZoomTitle('Hình ảnh sản phẩm');
+                                  }}
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                                   <Package size={16} />
@@ -2204,7 +2256,15 @@ function AdminDashboard({
                           )}
                           <td className="px-5 py-4">
                             {product.qrCode ? (
-                              <img src={product.qrCode} alt="QR" className="w-10 h-10 mx-auto opacity-70 group-hover:opacity-100 transition-opacity" />
+                              <img 
+                                src={product.qrCode} 
+                                alt="QR" 
+                                className="w-10 h-10 mx-auto opacity-70 group-hover:opacity-100 transition-all cursor-zoom-in hover:scale-110" 
+                                onClick={() => {
+                                  setZoomQrCode(product.qrCode || null);
+                                  setZoomTitle('Mã QR sản phẩm');
+                                }}
+                              />
                             ) : (
                               <div className="w-10 h-10 mx-auto bg-gray-50 flex items-center justify-center text-gray-200 rounded">
                                 <QrCode size={14} />
@@ -2353,6 +2413,13 @@ function AdminDashboard({
             handleExportPDF(target);
           }
         }}
+      />
+
+      <QRZoomModal 
+        isOpen={!!zoomQrCode}
+        onClose={() => setZoomQrCode(null)}
+        qrCode={zoomQrCode || ''}
+        title={zoomTitle}
       />
     </div>
   );
@@ -3790,7 +3857,21 @@ function DashboardTab({ products, categories, suppliers, orders }: { products: P
   );
 }
 
-function InventoryTab({ products, paginatedProducts, filters, setFilters }: { products: Product[], paginatedProducts: Product[], filters: any, setFilters: any }) {
+function InventoryTab({ 
+  products, 
+  paginatedProducts, 
+  filters, 
+  setFilters,
+  setZoomQrCode,
+  setZoomTitle
+}: { 
+  products: Product[], 
+  paginatedProducts: Product[], 
+  filters: any, 
+  setFilters: any,
+  setZoomQrCode: any,
+  setZoomTitle: any
+}) {
   const totalStockValue = products.reduce((acc, p) => acc + (p.stock * p.price), 0);
   const totalItems = products.reduce((acc, p) => acc + p.stock, 0);
   const lowStockProducts = products.filter(p => p.stock < 10);
@@ -3920,7 +4001,15 @@ function InventoryTab({ products, paginatedProducts, filters, setFilters }: { pr
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-bold overflow-hidden">
                             {product.image ? (
-                              <img src={product.image} className="w-full h-full object-cover" alt={product.name} />
+                              <img 
+                                src={product.image} 
+                                className="w-full h-full object-cover cursor-zoom-in" 
+                                alt={product.name} 
+                                onClick={() => {
+                                  setZoomQrCode(product.image || null);
+                                  setZoomTitle('Hình ảnh sản phẩm');
+                                }}
+                              />
                             ) : (
                               product.name.charAt(0)
                             )}
@@ -4909,6 +4998,70 @@ function GoogleDriveTab({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function QRZoomModal({ isOpen, onClose, qrCode, title = 'Mã QR' }: { isOpen: boolean, onClose: () => void, qrCode: string, title?: string }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="relative bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full flex flex-col items-center gap-6"
+      >
+        <div className="flex items-center justify-between w-full">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            {title.includes('QR') ? <QrCode className="text-[#9d171a]" size={20} /> : <div className="p-1 bg-red-50 text-[#9d171a] rounded"><Package size={16} /></div>}
+            {title}
+          </h3>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400 hover:text-gray-600"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="w-full aspect-square bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center p-4 overflow-hidden shadow-inner">
+          <img 
+            src={qrCode} 
+            alt="Zoomed Content" 
+            className="w-full h-full object-contain" 
+          />
+        </div>
+
+        <div className="flex flex-col gap-3 w-full">
+          <button 
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = qrCode;
+              link.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.png`;
+              link.click();
+            }}
+            className="w-full py-4 bg-[#9d171a] text-white rounded-2xl font-bold text-sm shadow-xl shadow-red-900/20 hover:bg-[#851215] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            <Download size={20} />
+            TẢI XUỐNG ẢNH
+          </button>
+          <button 
+            onClick={onClose}
+            className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all uppercase tracking-wider"
+          >
+            ĐÓNG
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }
