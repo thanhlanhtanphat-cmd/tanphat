@@ -14,7 +14,9 @@ export async function listDriveFiles(accessToken: string, folderId?: string) {
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch files from Google Drive');
+    const errorData = await response.json().catch(() => ({}));
+    const message = errorData.error?.message || response.statusText;
+    throw new Error(`Failed to fetch files from Google Drive: ${message} (${response.status})`);
   }
 
   return response.json();
@@ -32,7 +34,9 @@ export async function listDriveFolders(accessToken: string) {
   );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch folders from Google Drive');
+    const errorData = await response.json().catch(() => ({}));
+    const message = errorData.error?.message || response.statusText;
+    throw new Error(`Failed to fetch folders from Google Drive: ${message} (${response.status})`);
   }
 
   return response.json();
@@ -67,7 +71,9 @@ export async function uploadToDrive(accessToken: string, file: File | Blob, file
   );
 
   if (!response.ok) {
-    throw new Error('Failed to upload file to Google Drive');
+    const errorData = await response.json().catch(() => ({}));
+    const message = errorData.error?.message || response.statusText;
+    throw new Error(`Failed to upload file to Google Drive: ${message} (${response.status})`);
   }
 
   return response.json();

@@ -52,6 +52,7 @@ import {
   ShieldCheck,
   X,
   Zap,
+  Copy,
   Hash,
   Layout,
   Scaling,
@@ -88,7 +89,7 @@ import {
 } from 'recharts';
 import { CATEGORIES, BRANDS, INITIAL_PRODUCTS, INITIAL_SUPPLIERS, INITIAL_ORDERS, INITIAL_ACCOUNTS } from './constants.ts';
 import { ProductStatus, FilterState, Product, Supplier, Category, Order, OrderStatus, OrderItem, AdminAccount } from './types.ts';
-import { initAuth, googleSignIn, logout, getAccessToken } from './lib/firebase.ts';
+import { initAuth, googleSignIn, logout, getAccessToken, clearAccessToken } from './lib/firebase.ts';
 import { listDriveFiles, uploadToDrive, listDriveFolders, makeFilePublic } from './services/googleDrive.ts';
 import { supabaseService } from './services/supabaseService.ts';
 import { User } from 'firebase/auth';
@@ -146,6 +147,16 @@ export default function App() {
         setCategories(dbCategories);
         setOrders(dbOrders);
         setAccounts(dbAccounts);
+
+        // Handle URL parameters after data is loaded
+        const params = new URLSearchParams(window.location.search);
+        const categoryParam = params.get('category');
+        if (categoryParam) {
+          const matchedCategory = dbCategories.find(c => c.name.toLowerCase() === categoryParam.toLowerCase());
+          if (matchedCategory) {
+            setFilters(prev => ({ ...prev, category: matchedCategory.name }));
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch data from Supabase:', err);
       } finally {
@@ -2008,8 +2019,10 @@ function AdminDashboard({
                         <th className="px-5 py-4 text-left font-bold border-r border-white/10 w-16">STT</th>
                         <th className="px-5 py-4 text-left font-bold border-r border-white/10 w-48">Tên danh mục</th>
                         <th className="px-5 py-4 text-left font-bold border-r border-white/10">Mô tả</th>
-                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-40">Số sản phẩm</th>
-                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-40">Trạng thái</th>
+                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-32">Số sản phẩm</th>
+                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-32">Mã QR</th>
+                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-32">Link công khai</th>
+                        <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-32">Trạng thái</th>
                         <th className="px-5 py-4 text-center font-bold border-r border-white/10 w-24">Hành động</th>
                       </tr>
                     </thead>
@@ -2030,6 +2043,37 @@ function AdminDashboard({
                             <td className="px-5 py-4 text-sm text-gray-500 border-r border-gray-50 italic">{category.description || 'Không có mô tả'}</td>
                             <td className="px-5 py-4 text-sm font-bold text-center border-r border-gray-50">
                               <span className="text-[#9d171a]">{productCount}</span>
+                            </td>
+                            <td className="px-5 py-4 text-center border-r border-gray-50">
+                              {category.qrCode ? (
+                                <img src={category.qrCode} alt="QR" className="w-10 h-10 mx-auto rounded border border-gray-100 p-0.5" />
+                              ) : (
+                                <span className="text-[10px] text-gray-300">Chưa có</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-center border-r border-gray-50">
+                              <div className="flex flex-col items-center gap-1.5">
+                                <a 
+                                  href={category.publicLink || `${window.location.origin}/?category=${encodeURIComponent(category.name)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-all uppercase"
+                                >
+                                  <ExternalLink size={12} />
+                                  XEM CÔNG KHAI
+                                </a>
+                                <button 
+                                  onClick={() => {
+                                    const link = category.publicLink || `${window.location.origin}/?category=${encodeURIComponent(category.name)}`;
+                                    navigator.clipboard.writeText(link);
+                                    alert('Đã sao chép link công khai!');
+                                  }}
+                                  className="flex items-center gap-1 text-[9px] text-gray-400 hover:text-gray-600 font-medium"
+                                >
+                                  <Copy size={10} />
+                                  SAO CHÉP LINK
+                                </button>
+                              </div>
                             </td>
                             <td className="px-5 py-4 text-center border-r border-gray-50">
                               <span className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
@@ -2280,6 +2324,7 @@ function AdminDashboard({
         onClose={() => setShowCategoryModal(false)}
         onSave={handleSaveCategory}
         editingCategory={editingCategory}
+        selectedDriveFolder={selectedDriveFolder}
       />
 
       <OrderFormModal
@@ -2448,6 +2493,7 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
       alert(`Đã tải ${type === 'image' ? 'hình ảnh' : 'mã QR'} lên Google Drive thành công!`);
     } catch (err: any) {
       console.error('Drive upload failed:', err);
+      if (err.message.includes('401')) clearAccessToken();
       alert('Lỗi khi tải lên Drive: ' + err.message);
     } finally {
       setIsUploading(prev => ({ ...prev, [type]: false }));
@@ -2984,28 +3030,105 @@ function SupplierFormModal({ isOpen, onClose, onSave, editingSupplier }: any) {
   );
 }
 
-function CategoryFormModal({ isOpen, onClose, onSave, editingCategory }: any) {
+function CategoryFormModal({ isOpen, onClose, onSave, editingCategory, selectedDriveFolder }: any) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: ProductStatus.SHOW
+    status: ProductStatus.SHOW,
+    qrCode: '',
+    publicLink: ''
   });
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [qrPreview, setQrPreview] = useState<string>('');
 
   React.useEffect(() => {
     if (editingCategory) {
       setFormData({
         name: editingCategory.name,
         description: editingCategory.description,
-        status: editingCategory.status
+        status: editingCategory.status,
+        qrCode: editingCategory.qrCode || '',
+        publicLink: editingCategory.publicLink || ''
       });
+      setQrPreview(editingCategory.qrCode || '');
     } else {
       setFormData({
         name: '',
         description: '',
-        status: ProductStatus.SHOW
+        status: ProductStatus.SHOW,
+        qrCode: '',
+        publicLink: ''
       });
+      setQrPreview('');
     }
   }, [editingCategory, isOpen]);
+
+  const handleDriveUpload = async (dataUrl: string) => {
+    if (!selectedDriveFolder) {
+      alert('Vui lòng chọn thư mục lưu trữ trong tab Google Drive trước.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error('Cần đăng nhập Google');
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      
+      const fileName = `category_${formData.name || 'qr'}_${Date.now()}.png`;
+      const result = await uploadToDrive(token, blob, fileName, selectedDriveFolder);
+      
+      await makeFilePublic(token, result.id);
+      
+      const drivePublicUrl = `https://lh3.googleusercontent.com/d/${result.id}`;
+      setQrPreview(drivePublicUrl);
+      setFormData({ ...formData, qrCode: drivePublicUrl });
+      
+      alert('Đã tải mã QR lên Google Drive thành công!');
+    } catch (err: any) {
+      console.error('Drive upload failed:', err);
+      if (err.message.includes('401')) clearAccessToken();
+      alert('Lỗi khi tải lên Drive: ' + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleQrFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setQrPreview(base64String);
+        setFormData({ ...formData, qrCode: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const generateQRCode = async () => {
+    if (!formData.name) {
+      alert('Vui lòng nhập tên danh mục để tạo mã QR');
+      return;
+    }
+    try {
+      // Create a search link or deep link
+      const publicSearchLink = `${window.location.origin}/?category=${encodeURIComponent(formData.name)}`;
+      const qrDataUrl = await QRCode.toDataURL(publicSearchLink, {
+        width: 400,
+        margin: 2
+      });
+      setQrPreview(qrDataUrl);
+      setFormData({ ...formData, qrCode: qrDataUrl, publicLink: publicSearchLink });
+    } catch (err) {
+      console.error('QR generation error:', err);
+      alert('Không thể tạo mã QR');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -3029,11 +3152,11 @@ function CategoryFormModal({ isOpen, onClose, onSave, editingCategory }: any) {
             </h3>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded transition-colors">
-            <ChevronLeft size={24} className="rotate-90 md:rotate-0" />
+            <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto max-h-[80vh]">
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tên danh mục sản phẩm</label>
@@ -3043,7 +3166,7 @@ function CategoryFormModal({ isOpen, onClose, onSave, editingCategory }: any) {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ví dụ: Thiết bị xây dựng, Sơn..."
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9d171a] transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9d171a] transition-all font-bold"
               />
             </div>
 
@@ -3060,12 +3183,63 @@ function CategoryFormModal({ isOpen, onClose, onSave, editingCategory }: any) {
             </div>
 
             <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Link công khai (Tùy chọn)</label>
+              <input 
+                type="text" 
+                value={formData.publicLink}
+                onChange={(e) => setFormData({ ...formData, publicLink: e.target.value })}
+                placeholder="https://catalog.example.com?category=Sơn"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9d171a] transition-all text-xs text-blue-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider text-blue-500">Mã QR Danh Mục</label>
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={generateQRCode}
+                      className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded text-[10px] font-bold hover:bg-purple-100"
+                    >
+                      TẠO QR TỰ ĐỘNG
+                    </button>
+                    {qrPreview && (
+                      <button
+                        type="button"
+                        disabled={isUploading}
+                        onClick={() => handleDriveUpload(qrPreview)}
+                        className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold hover:bg-blue-100 disabled:opacity-50"
+                      >
+                        {isUploading ? 'ĐANG TẢI...' : 'LƯU VÀO DRIVE'}
+                      </button>
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleQrFileSelected}
+                    className="text-[10px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-gray-100 file:text-gray-500 hover:file:bg-gray-200"
+                  />
+                </div>
+                <div className="w-24 h-24 bg-gray-50 rounded-lg border-2 border-dashed border-gray-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                  {qrPreview ? (
+                    <img src={qrPreview} alt="QR Preview" className="w-full h-full object-contain" />
+                  ) : (
+                    <QrCode size={32} className="text-gray-200" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Mô tả</label>
               <textarea 
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Nhập mô tả ngắn gọn về danh mục"
-                rows={4}
+                rows={3}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9d171a] transition-all resize-none"
               />
             </div>
@@ -4411,11 +4585,19 @@ function GoogleDriveTab({
   const fetchFolders = async () => {
     try {
       const token = await getAccessToken();
-      if (!token) return;
+      if (!token) {
+        setNeedsAuth(true);
+        return;
+      }
       const data = await listDriveFolders(token);
       setFolders(data.files || []);
-    } catch (err) {
+      setNeedsAuth(false);
+    } catch (err: any) {
       console.error('Error fetching folders:', err);
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        clearAccessToken();
+        setNeedsAuth(true);
+      }
     }
   };
 
@@ -4434,7 +4616,8 @@ function GoogleDriveTab({
     } catch (err: any) {
       console.error('Error fetching Drive files:', err);
       setError('Không thể lấy danh sách tập tin từ Google Drive. Vui lòng thử lại.');
-      if (err.message.includes('401')) {
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        clearAccessToken();
         setNeedsAuth(true);
       }
     } finally {
@@ -4486,6 +4669,10 @@ function GoogleDriveTab({
       alert(`Đồng bộ hoàn tất! Đã cập nhật ${matchCount} sản phẩm.`);
     } catch (err: any) {
       console.error('Sync failed:', err);
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        clearAccessToken();
+        setNeedsAuth(true);
+      }
       alert('Lỗi khi đồng bộ: ' + err.message);
     } finally {
       setIsSyncing(false);
@@ -4541,8 +4728,12 @@ function GoogleDriveTab({
       await makeFilePublic(token, result.id);
       alert('Tải tập tin lên Google Drive thành công!');
       fetchFiles();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
+      if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
+        clearAccessToken();
+        setNeedsAuth(true);
+      }
       alert('Tải tập tin lên thất bại.');
     } finally {
       setLoading(false);

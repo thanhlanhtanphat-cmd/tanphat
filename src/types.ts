@@ -13,6 +13,8 @@ export interface Category {
   name: string;
   description: string;
   status: ProductStatus;
+  qrCode?: string;
+  publicLink?: string;
 }
 export type Brand = string;
 

@@ -126,28 +126,58 @@ export const supabaseService = {
       .select('*')
       .order('id', { ascending: true });
     if (error) throw error;
-    return data as Category[];
+    return data.map(c => ({
+      ...c,
+      qrCode: c.qr_code,
+      publicLink: c.public_link
+    })) as Category[];
   },
 
   async addCategory(category: Omit<Category, 'id'>) {
+    const categoryData = {
+      name: category.name,
+      description: category.description,
+      status: category.status,
+      qr_code: category.qrCode,
+      public_link: category.publicLink
+    };
+
     const { data, error } = await supabase
       .from('categories')
-      .insert([category])
+      .insert([categoryData])
       .select()
       .single();
     if (error) throw error;
-    return data as Category;
+    return {
+      ...data,
+      qrCode: data.qr_code,
+      publicLink: data.public_link
+    } as Category;
   },
 
   async updateCategory(id: number, category: Partial<Category>) {
+    const updateData: any = { ...category };
+    if (category.qrCode !== undefined) {
+      updateData.qr_code = category.qrCode;
+      delete updateData.qrCode;
+    }
+    if (category.publicLink !== undefined) {
+      updateData.public_link = category.publicLink;
+      delete updateData.publicLink;
+    }
+
     const { data, error } = await supabase
       .from('categories')
-      .update(category)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
     if (error) throw error;
-    return data as Category;
+    return {
+      ...data,
+      qrCode: data.qr_code,
+      publicLink: data.public_link
+    } as Category;
   },
 
   async deleteCategory(id: number) {

@@ -79,6 +79,11 @@ export const getAccessToken = async (): Promise<string | null> => {
   return cachedAccessToken;
 };
 
+export const clearAccessToken = () => {
+  cachedAccessToken = null;
+  sessionStorage.removeItem('google_drive_access_token');
+};
+
 export const logout = async () => {
   await auth.signOut();
   cachedAccessToken = null;
