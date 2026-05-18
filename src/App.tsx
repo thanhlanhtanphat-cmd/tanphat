@@ -4518,8 +4518,9 @@ function GoogleDriveTab({
         fetchFolders();
         fetchFiles();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Sign in failed:', err);
+      alert(err.message);
     } finally {
       setIsLoggingIn(false);
     }
