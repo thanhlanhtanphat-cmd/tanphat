@@ -714,7 +714,7 @@ export default function App() {
         </div>
 
         <div className="border-t border-gray-100 pt-8 text-center text-xs text-gray-400 font-medium tracking-wide">
-          © 2024 Tân Phát Tote & Building. All rights reserved.
+          © 2026 Tân Phát Tote & Building. All rights reserved.
         </div>
       </footer>
 
