@@ -774,6 +774,7 @@ function AdminDashboard({
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportType, setExportType] = useState<'excel' | 'pdf'>('pdf');
   const [showOrderExportDropdown, setShowOrderExportDropdown] = useState(false);
+  const [showCategoryExportDropdown, setShowCategoryExportDropdown] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -1107,6 +1108,121 @@ function AdminDashboard({
     const fileName = `TAN_PHAT_Bao_cao_don_hang_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
     setShowOrderExportDropdown(false);
+  };
+
+  const handleExportCategoriesExcel = () => {
+    const data = categories.map((c: Category, index: number) => ({
+      'STT': index + 1,
+      'TÊN DANH MỤC': c.name,
+      'SỐ SẢN PHẨM': products.filter((p: Product) => p.category === c.name).length,
+      'MÃ QR': c.qrCode || 'Chưa có'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Set column widths for Excel
+    worksheet['!cols'] = [
+      { wch: 6 },   // STT
+      { wch: 40 },  // Tên danh mục
+      { wch: 20 },  // Số sản phẩm
+      { wch: 60 },  // Mã QR
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh mục sản phẩm');
+    
+    const fileName = `TAN_PHAT_Bao_cao_danh_muc_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    setShowCategoryExportDropdown(false);
+  };
+
+  const handleExportCategoriesPDF = async () => {
+    const element = document.createElement('div');
+    element.style.width = '1050px';
+    element.style.fontFamily = "'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    element.style.color = '#1a202c';
+    element.style.backgroundColor = 'white';
+
+    const dateStr = new Date().toLocaleDateString('vi-VN');
+    
+    element.innerHTML = `
+      <div style="padding: 35px; background-color: white;">
+        <div style="background-color: #2d3748; padding: 30px; color: white; margin-bottom: 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+          <div>
+            <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">TÂN PHÁT TOTE & BUILDING</h1>
+            <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9; font-weight: 500;">📍 Dãy Shophouse Khu B1 - Đại Đô Thị An Phú Thịnh - Quy Nhơn - Bình Định</p>
+            <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.9; font-weight: 500;">📞 081 491 1331 | 🌐 tanphatcompany.com</p>
+          </div>
+          <div style="text-align: right; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 30px;">
+            <div style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Danh mục: Kế toán</div>
+            <div style="font-size: 16px; font-weight: 800; letter-spacing: 0.5px;">BÁO CÁO DANH MỤC</div>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 5px; font-weight: 500;">Ngày trích xuất: ${dateStr}</div>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #9d171a;">
+          <h2 style="margin: 0; font-size: 26px; color: #1a202c; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">Bảng tổng kết chi tiết danh mục sản phẩm</h2>
+          <p style="margin: 8px 0 0 0; font-size: 14px; color: #718096; font-style: italic; font-weight: 600;">Dữ liệu gồm: <b>${categories.length}</b> danh mục hệ thống</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <thead>
+            <tr style="background-color: #2d3748; color: white;">
+              <th style="padding: 15px 10px; border: 1px solid #cbd5e0; text-align: center; width: 60px; text-transform: uppercase; font-weight: 900;">STT</th>
+              <th style="padding: 15px 15px; border: 1px solid #cbd5e0; text-align: left; text-transform: uppercase; font-weight: 900;">Tên Danh Mục</th>
+              <th style="padding: 15px 15px; border: 1px solid #cbd5e0; text-align: center; width: 140px; text-transform: uppercase; font-weight: 900;">Số Sản Phẩm</th>
+              <th style="padding: 15px 15px; border: 1px solid #cbd5e0; text-align: center; width: 120px; text-transform: uppercase; font-weight: 900;">Mã QR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${categories.map((c: Category, index: number) => {
+              const productCount = products.filter((p: Product) => p.category === c.name).length;
+              return `
+                <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f7fafc'}; transition: background-color 0.2s;">
+                  <td style="padding: 12px 10px; border: 1px solid #e2e8f0; text-align: center; font-weight: 600; color: #4a5568;">${index + 1}</td>
+                  <td style="padding: 12px 15px; border: 1px solid #e2e8f0; font-weight: 700; color: #2d3748;">${c.name}</td>
+                  <td style="padding: 12px 15px; border: 1px solid #e2e8f0; text-align: center; font-weight: 700; color: #9d171a;">${productCount}</td>
+                  <td style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: center;">
+                    ${c.qrCode ? `<img src="${c.qrCode}" style="width: 80px; height: 80px; display: block; margin: 0 auto; border: 1px solid #edf2f7; border-radius: 4px;" crossorigin="anonymous" />` : '<span style="font-size: 10px; color: #a0aec0;">Chưa có</span>'}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-start; border-top: 1px solid #e2e8f0; padding-top: 30px;">
+          <div style="text-align: center; width: 250px;">
+            <p style="margin: 0; font-size: 13px; font-weight: 600; color: #4a5568; text-transform: uppercase;">Người lập biểu</p>
+            <p style="margin: 5px 0 50px 0; font-size: 11px; color: #718096; font-style: italic;">(Ký và ghi rõ họ tên)</p>
+          </div>
+          <div style="text-align: center; width: 250px;">
+            <p style="margin: 0; font-size: 13px; font-weight: 800; color: #1a202c; text-transform: uppercase;">Giám đốc xác nhận</p>
+            <p style="margin: 5px 0 50px 0; font-size: 11px; color: #718096; font-style: italic;">(Ký tên và đóng dấu)</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; color: #a0aec0; font-size: 10px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
+          <p>© 2026 Tân Phát Tote & Building - Hệ thống quản lý danh mục sản phẩm nội bộ</p>
+        </div>
+      </div>
+    `;
+
+    const opt: any = {
+      margin: 10,
+      filename: `TAN_PHAT_Bao_cao_danh_muc_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+      setShowCategoryExportDropdown(false);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.');
+    }
   };
 
   const handleExportOrdersPDF = async () => {
@@ -1793,13 +1909,52 @@ function AdminDashboard({
               )}
 
               {activeTab === 'Danh mục' && (
-                <button 
-                  onClick={handleOpenAddCategoryModal}
-                  className="bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition-colors shadow-lg shadow-green-900/10"
-                >
-                  <Tags size={18} />
-                  <span>Thêm danh mục</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowCategoryExportDropdown(!showCategoryExportDropdown)}
+                      className="bg-white text-gray-700 border border-gray-200 px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      <Download size={18} className="text-[#9d171a]" />
+                      <span>Xuất báo cáo</span>
+                      <ChevronDown size={14} className={`transition-transform ${showCategoryExportDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {showCategoryExportDropdown && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-20"
+                        >
+                          {[
+                            { name: 'Xuất Excel (.xlsx)', icon: FileSpreadsheet, color: 'text-green-600', action: handleExportCategoriesExcel },
+                            { name: 'Xuất PDF (.pdf)', icon: FileText, color: 'text-red-500', action: handleExportCategoriesPDF },
+                            { name: 'In danh sách', icon: Printer, color: 'text-gray-600', action: () => window.print() },
+                          ].map((opt) => (
+                            <button 
+                              key={opt.name} 
+                              onClick={opt.action}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-600 transition-colors border-b last:border-0 border-gray-50"
+                            >
+                              <opt.icon size={18} className={opt.color} />
+                              <span>{opt.name}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <button 
+                    onClick={handleOpenAddCategoryModal}
+                    className="bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-700 transition-colors shadow-lg shadow-green-900/10"
+                  >
+                    <Tags size={18} />
+                    <span>Thêm danh mục</span>
+                  </button>
+                </div>
               )}
               
               {activeTab === 'Đơn hàng' && (
@@ -4678,49 +4833,42 @@ function GoogleDriveTab({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(true);
 
-  const fetchFolders = async () => {
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setNeedsAuth(true);
-        return;
-      }
-      const data = await listDriveFolders(token);
-      setFolders(data.files || []);
-      setNeedsAuth(false);
-      setError(null);
-    } catch (err: any) {
-      console.error('Error fetching folders:', err);
-      if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('invalid authentication credentials')) {
-        clearAccessToken();
-        setNeedsAuth(true);
-        setUser(null);
-      } else {
-        setError('Không thể tải danh sách thư mục. Vui lòng kiểm tra kết nối mạng.');
-      }
-    }
-  };
-
-  const fetchFiles = async (folderId?: string) => {
+  const fetchDriveData = async (folderId?: string) => {
     setLoading(true);
     setError(null);
     try {
       const token = await getAccessToken();
       if (!token) {
         setNeedsAuth(true);
+        setLoading(false);
         return;
       }
-      const data = await listDriveFiles(token, folderId || selectedFolderId);
-      setFiles(data.files || []);
+
+      // Fetch folders and files in parallel
+      const [foldersData, filesData] = await Promise.all([
+        listDriveFolders(token),
+        listDriveFiles(token, folderId || selectedFolderId)
+      ]);
+
+      setFolders(foldersData.files || []);
+      setFiles(filesData.files || []);
       setNeedsAuth(false);
+      setError(null);
     } catch (err: any) {
-      console.error('Error fetching Drive files:', err);
-      if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('invalid authentication credentials')) {
+      const isAuthError = err.message.includes('401') || 
+                         err.message.includes('Unauthorized') || 
+                         err.message.includes('invalid authentication credentials') ||
+                         err.message.includes('invalid_grant');
+
+      if (isAuthError) {
         clearAccessToken();
         setNeedsAuth(true);
         setUser(null);
+        // Don't set a scary error message for auth expiration, 
+        // the Connect UI will explain the need to re-login
       } else {
-        setError('Không thể lấy danh sách tập tin từ Google Drive. Vui lòng thử lại.');
+        console.error('Drive fetch error:', err);
+        setError('Không thể kết nối với Google Drive. Vui lòng kiểm tra lại kết nối mạng.');
       }
     } finally {
       setLoading(false);
@@ -4786,8 +4934,7 @@ function GoogleDriveTab({
       (currentUser) => {
         setUser(currentUser);
         setNeedsAuth(false);
-        fetchFolders();
-        fetchFiles();
+        fetchDriveData();
       },
       () => {
         setUser(null);
@@ -4804,8 +4951,7 @@ function GoogleDriveTab({
       if (result) {
         setUser(result.user);
         setNeedsAuth(false);
-        fetchFolders();
-        fetchFiles();
+        fetchDriveData();
       }
     } catch (err: any) {
       console.error('Sign in failed:', err);
@@ -4824,15 +4970,20 @@ function GoogleDriveTab({
       const token = await getAccessToken();
       if (!token) {
         setNeedsAuth(true);
+        setLoading(false);
         return;
       }
       const result = await uploadToDrive(token, file, undefined, selectedFolderId);
       await makeFilePublic(token, result.id);
       alert('Tải tập tin lên Google Drive thành công!');
-      fetchFiles();
+      fetchDriveData();
     } catch (err: any) {
       console.error('Upload failed:', err);
-      if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
+      const isAuthError = err.message.includes('401') || 
+                         err.message.includes('Unauthorized') || 
+                         err.message.includes('invalid authentication credentials');
+      
+      if (isAuthError) {
         clearAccessToken();
         setNeedsAuth(true);
       }
@@ -4889,7 +5040,7 @@ function GoogleDriveTab({
               onChange={(e) => {
                 const newFolderId = e.target.value;
                 setSelectedFolderId(newFolderId);
-                fetchFiles(newFolderId);
+                fetchDriveData(newFolderId);
               }}
               className="bg-transparent text-xs font-bold text-gray-700 outline-none w-full cursor-pointer"
             >
@@ -4914,8 +5065,7 @@ function GoogleDriveTab({
           
           <button
             onClick={() => {
-              fetchFolders();
-              fetchFiles();
+              fetchDriveData();
             }}
             className="p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 transition-colors"
             title="Làm mới"
