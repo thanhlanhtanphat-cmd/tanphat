@@ -119,11 +119,11 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
 
   // States for data management
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
-  const [categories, setCategories] = useState(CATEGORIES);
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
-  const [accounts, setAccounts] = useState<AdminAccount[]>(INITIAL_ACCOUNTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<string>(() => localStorage.getItem('selectedDriveFolder') || '');
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [zoomQrCode, setZoomQrCode] = useState<string | null>(null);
@@ -242,7 +242,7 @@ export default function App() {
     e.preventDefault();
     if (loginData.username === '1' && loginData.password === '1') {
       setIsLoggedIn(true);
-      setCurrentUser(INITIAL_ACCOUNTS[0]);
+      setCurrentUser(accounts.length > 0 ? accounts[0] : null);
       setShowLoginModal(false);
       setLoginData({ username: '', password: '' });
     } else {
