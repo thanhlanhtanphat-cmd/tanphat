@@ -302,7 +302,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <img 
-              src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+              src="https://tanphatcompany.com/wp-content/uploads/2023/12/logo_tp.svg" 
               alt="Tân Phát Logo" 
               className="h-16 md:h-20 w-auto object-contain"
               referrerPolicy="no-referrer"
@@ -655,7 +655,7 @@ export default function App() {
           <div className="space-y-6">
             <div className="flex items-center">
               <img 
-                src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+                src="https://tanphatcompany.com/wp-content/uploads/2023/12/logo_tp.svg" 
                 alt="Tân Phát Logo" 
                 className="h-12 w-auto object-contain"
                 referrerPolicy="no-referrer"
@@ -4602,7 +4602,7 @@ function LoginModal({ isOpen, onClose, onLogin, data, setData }: any) {
         <div className="bg-[#9d171a] p-8 text-white text-center">
           <div className="bg-white p-4 rounded-xl inline-block mb-6 shadow-lg">
             <img 
-              src="/src/assets/images/tan_phat_official_logo_png_1779096124169.png" 
+              src="https://tanphatcompany.com/wp-content/uploads/2023/12/logo_tp.svg" 
               alt="Tân Phát Logo" 
               className="h-12 w-auto object-contain"
               referrerPolicy="no-referrer"
