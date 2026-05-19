@@ -83,6 +83,7 @@ export interface FilterState {
   brand: string;
   minPrice: string;
   maxPrice: string;
+  priceRange: string;
   orderQuery: string;
   orderPhone: string;
   orderDate: string;

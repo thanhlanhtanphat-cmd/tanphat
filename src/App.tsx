@@ -102,6 +102,7 @@ export default function App() {
     brand: 'Tất cả thương hiệu',
     minPrice: '',
     maxPrice: '',
+    priceRange: 'Tất cả các mức giá',
     orderQuery: '',
     orderPhone: '',
     orderDate: '',
@@ -177,9 +178,19 @@ export default function App() {
       const matchBrand = filters.brand === 'Tất cả thương hiệu' || product.brand === filters.brand;
       
       const price = product.price;
-      const min = filters.minPrice ? parseInt(filters.minPrice) : 0;
-      const max = filters.maxPrice ? parseInt(filters.maxPrice) : Infinity;
-      const matchPrice = price >= min && price <= max;
+      let matchPrice = true;
+      if (filters.priceRange === 'Dưới 1.000.000đ') {
+        matchPrice = price < 1000000;
+      } else if (filters.priceRange === '1.000.000đ - 2.000.000đ') {
+        matchPrice = price >= 1000000 && price <= 2000000;
+      } else if (filters.priceRange === '2.000.000đ - 5.000.000đ') {
+        matchPrice = price >= 2000000 && price <= 5000000;
+      } else if (filters.priceRange === '5.000.000đ - 10.000.000đ') {
+        matchPrice = price >= 5000000 && price <= 10000000;
+      } else if (filters.priceRange === 'Trên 10.000.000đ') {
+        matchPrice = price > 10000000;
+      }
+      
       const matchStatus = filters.status === 'Tất cả trạng thái' || product.status === filters.status;
       
       let matchStock = true;
@@ -212,6 +223,7 @@ export default function App() {
       brand: 'Tất cả thương hiệu',
       minPrice: '',
       maxPrice: '',
+      priceRange: 'Tất cả các mức giá',
       orderQuery: '',
       orderPhone: '',
       orderDate: '',
@@ -309,23 +321,13 @@ export default function App() {
             />
           </div>
           
-          <div className="hidden lg:block text-center flex-1 mx-8 overflow-hidden">
-            <h2 className="text-xl font-bold text-[#9d171a] uppercase truncate h-[35px]">KHÔNG NGỪNG PHÁT TRIỂN - KHÔNG NGỪNG VƯƠN XA</h2>
+          <div className="hidden lg:block text-center flex-1 mx-8">
+            <h2 className="text-xl font-bold text-[#9d171a] uppercase">KHÔNG NGỪNG PHÁT TRIỂN - KHÔNG NGỪNG VƯƠN XA</h2>
             <div className="w-48 h-1 bg-gradient-to-r from-transparent via-[#9d171a] to-transparent mx-auto mt-2"></div>
             <div className="w-2 h-2 rounded-full bg-[#9d171a] mx-auto -mt-1.5"></div>
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-3 border border-gray-200 p-2 rounded-lg bg-gray-50">
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-[#9d171a] uppercase">Quét mã QR</p>
-                <p className="text-[9px] text-gray-500">để truy cập nhanh</p>
-                <p className="text-[9px] text-gray-500">danh sách sản phẩm</p>
-              </div>
-              <div className="w-10 h-10 bg-white p-1 border border-gray-200">
-                <QrCode size={30} className="text-black" />
-              </div>
-            </div>
             
             {isLoggedIn ? (
               <div className="flex items-center gap-3">
@@ -361,8 +363,8 @@ export default function App() {
             <Package size={24} />
           </div>
           <div>
-            <h3 className="text-[25px] font-bold text-[#333] uppercase h-[31px]">Danh sách sản phẩm công khai</h3>
-            <p className="text-sm text-gray-500">Danh sách sản phẩm được công khai bởi Tân Phát Tote & Building</p>
+            <h3 className="text-lg md:text-xl lg:text-[25px] font-bold text-[#333] uppercase leading-tight">Danh sách sản phẩm công khai</h3>
+            <p className="text-sm text-gray-500 mt-1">Danh sách sản phẩm được công khai bởi Tân Phát Tote & Building</p>
           </div>
         </div>
 
@@ -409,23 +411,18 @@ export default function App() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-gray-500 uppercase">Khoảng giá</label>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="number" 
-                  placeholder="Từ đ"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#9d171a] text-sm"
-                  value={filters.minPrice}
-                  onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-                />
-                <span className="text-gray-400">-</span>
-                <input 
-                  type="number" 
-                  placeholder="Đến đ"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#9d171a] text-sm"
-                  value={filters.maxPrice}
-                  onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                />
-              </div>
+              <select 
+                className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#9d171a] text-sm bg-white"
+                value={filters.priceRange}
+                onChange={(e) => setFilters({...filters, priceRange: e.target.value})}
+              >
+                <option value="Tất cả các mức giá">Tất cả các mức giá</option>
+                <option value="Dưới 1.000.000đ">Dưới 1.000.000đ</option>
+                <option value="1.000.000đ - 2.000.000đ">1.000.000đ - 2.000.000đ</option>
+                <option value="2.000.000đ - 5.000.000đ">2.000.000đ - 5.000.000đ</option>
+                <option value="5.000.000đ - 10.000.000đ">5.000.000đ - 10.000.000đ</option>
+                <option value="Trên 10.000.000đ">Trên 10.000.000đ</option>
+              </select>
             </div>
 
             <div className="flex items-end gap-2">
@@ -465,15 +462,14 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   {paginatedProducts.length > 0 ? (
                     paginatedProducts.map((product, index) => (
                       <motion.tr 
                         key={product.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.15 }}
                         className="hover:bg-gray-50 group transition-colors"
                       >
                         <td className="px-4 py-3 text-sm text-gray-500 border-r border-gray-100">
@@ -801,9 +797,19 @@ function AdminDashboard({
       const matchBrand = filters.brand === 'Tất cả thương hiệu' || product.brand === filters.brand;
       
       const price = product.price;
-      const min = filters.minPrice ? parseInt(filters.minPrice) : 0;
-      const max = filters.maxPrice ? parseInt(filters.maxPrice) : Infinity;
-      const matchPrice = price >= min && price <= max;
+      let matchPrice = true;
+      if (filters.priceRange === 'Dưới 1.000.000đ') {
+        matchPrice = price < 1000000;
+      } else if (filters.priceRange === '1.000.000đ - 2.000.000đ') {
+        matchPrice = price >= 1000000 && price <= 2000000;
+      } else if (filters.priceRange === '2.000.000đ - 5.000.000đ') {
+        matchPrice = price >= 2000000 && price <= 5000000;
+      } else if (filters.priceRange === '5.000.000đ - 10.000.000đ') {
+        matchPrice = price >= 5000000 && price <= 10000000;
+      } else if (filters.priceRange === 'Trên 10.000.000đ') {
+        matchPrice = price > 10000000;
+      }
+      
       const matchStatus = filters.status === 'Tất cả trạng thái' || product.status === filters.status;
       
       let matchStock = true;
@@ -1644,23 +1650,18 @@ function AdminDashboard({
 
                 <div className="space-y-1.5 lg:col-span-2">
                   <label className="text-xs font-bold text-gray-400 uppercase">Khoảng giá</label>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="number"
-                      placeholder="Từ đ"
-                      className="flex-1 px-4 py-2 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#9d171a] bg-gray-50/30"
-                      value={filters.minPrice}
-                      onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                    />
-                    <span className="text-gray-300">-</span>
-                    <input 
-                      type="number"
-                      placeholder="Đến đ"
-                      className="flex-1 px-4 py-2 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#9d171a] bg-gray-50/30"
-                      value={filters.maxPrice}
-                      onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                    />
-                  </div>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#9d171a] bg-gray-50/30"
+                    value={filters.priceRange}
+                    onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
+                  >
+                    <option value="Tất cả các mức giá">Tất cả các mức giá</option>
+                    <option value="Dưới 1.000.000đ">Dưới 1.000.000đ</option>
+                    <option value="1.000.000đ - 2.000.000đ">1.000.000đ - 2.000.000đ</option>
+                    <option value="2.000.000đ - 5.000.000đ">2.000.000đ - 5.000.000đ</option>
+                    <option value="5.000.000đ - 10.000.000đ">5.000.000đ - 10.000.000đ</option>
+                    <option value="Trên 10.000.000đ">Trên 10.000.000đ</option>
+                  </select>
                 </div>
 
                 <div className="flex items-end gap-3 justify-end lg:col-span-1">
