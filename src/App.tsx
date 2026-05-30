@@ -857,6 +857,7 @@ function AdminDashboard({
       setConfirmConfig({
         title: 'YÊU CẦU KẾT NỐI GOOGLE DRIVE',
         message: 'Hệ thống cần kết nối với Google Drive để tự động đồng bộ hóa và lưu trữ hình ảnh sản phẩm cũng như mã QR. Bạn có muốn chuyển sang tab Google Drive đầu tiên để kết nối không?',
+        confirmText: 'Kết nối ngay',
         onConfirm: () => {
           setShowConfirmModal(false);
           setActiveTab('Google Drive');
@@ -875,9 +876,11 @@ function AdminDashboard({
   };
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmConfig, setConfirmConfig] = useState<{title: string, message: string, onConfirm: () => void}>({
+  const [confirmConfig, setConfirmConfig] = useState<{title: string, message: string, onConfirm: () => void, confirmText?: string, cancelText?: string}>({
     title: '',
     message: '',
+    confirmText: '',
+    cancelText: '',
     onConfirm: () => {}
   });
 
@@ -2569,6 +2572,8 @@ function AdminDashboard({
         onConfirm={confirmConfig.onConfirm}
         title={confirmConfig.title}
         message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
       />
 
       <ExportSelectionModal 
@@ -2593,8 +2598,13 @@ function AdminDashboard({
   );
 }
 
-function ConfirmModal({ isOpen, onClose, onConfirm, title, message }: any) {
+function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText }: any) {
   if (!isOpen) return null;
+
+  // Detect connection or general message to display blue info header instead of red danger header
+  const isConnectionOrInfo = title?.toLowerCase().includes('kết nối') || 
+                              title?.toLowerCase().includes('thông báo') || 
+                              title?.toLowerCase().includes('google drive');
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -2603,8 +2613,8 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message }: any) {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
-        <div className="bg-red-600 p-4 text-white flex items-center gap-3">
-          <Trash2 size={20} />
+        <div className={`${isConnectionOrInfo ? 'bg-blue-600' : 'bg-red-600'} p-4 text-white flex items-center gap-3`}>
+          {isConnectionOrInfo ? <HardDrive size={20} /> : <Trash2 size={20} />}
           <h3 className="font-bold uppercase tracking-wider text-sm">{title}</h3>
         </div>
         <div className="p-6">
@@ -2614,13 +2624,13 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message }: any) {
               onClick={onClose}
               className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              Hủy bỏ
+              {cancelText || 'Hủy bỏ'}
             </button>
             <button 
               onClick={onConfirm}
-              className="px-6 py-2 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20"
+              className={`px-6 py-2 text-sm font-bold ${isConnectionOrInfo ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20' : 'bg-red-600 hover:bg-red-700 shadow-red-900/20'} text-white rounded-lg transition-colors shadow-lg`}
             >
-              Xác nhận xóa
+              {confirmText || 'Xác nhận xóa'}
             </button>
           </div>
         </div>
