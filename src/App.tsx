@@ -851,7 +851,20 @@ function AdminDashboard({
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value).replace('₫', '');
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = async () => {
+    const token = await getAccessToken();
+    if (!token) {
+      setConfirmConfig({
+        title: 'YÊU CẦU KẾT NỐI GOOGLE DRIVE',
+        message: 'Hệ thống cần kết nối với Google Drive để tự động đồng bộ hóa và lưu trữ hình ảnh sản phẩm cũng như mã QR. Bạn có muốn chuyển sang tab Google Drive đầu tiên để kết nối không?',
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setActiveTab('Google Drive');
+        }
+      });
+      setShowConfirmModal(true);
+      return;
+    }
     setEditingProduct(null);
     setShowProductModal(true);
   };
@@ -2634,6 +2647,7 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
   const [qrPreview, setQrPreview] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState<{image: boolean, qr: boolean}>({ image: false, qr: false });
+  const [isSavingAndUploading, setIsSavingAndUploading] = useState(false);
 
   React.useEffect(() => {
     if (editingProduct) {
@@ -2748,9 +2762,62 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    if (!formData.code) {
+      alert('Vui lòng nhập mã sản phẩm!');
+      return;
+    }
+    if (!formData.name) {
+      alert('Vui lòng nhập tên sản phẩm!');
+      return;
+    }
+
+    setIsSavingAndUploading(true);
+    const updatedFormData = { ...formData };
+
+    try {
+      const hasLocalImage = imagePreview && imagePreview.startsWith('data:');
+      const hasLocalQr = qrPreview && qrPreview.startsWith('data:');
+
+      if (hasLocalImage || hasLocalQr) {
+        if (!selectedDriveFolder) {
+          throw new Error('Vui lòng chọn thư mục lưu trữ trong tab Google Drive trước.');
+        }
+
+        const token = await getAccessToken();
+        if (!token) {
+          throw new Error('Cần kết nối với Google Drive để tự động lưu trữ hình ảnh và mã QR. Vui lòng kết nối tài khoản.');
+        }
+
+        if (hasLocalImage) {
+          const res = await fetch(imagePreview);
+          const blob = await res.blob();
+          const fileName = `${formData.code}_image_${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+          const result = await uploadToDrive(token, blob, fileName, selectedDriveFolder);
+          await makeFilePublic(token, result.id);
+          const drivePublicUrl = `https://lh3.googleusercontent.com/d/${result.id}`;
+          updatedFormData.image = drivePublicUrl;
+        }
+
+        if (hasLocalQr) {
+          const res = await fetch(qrPreview);
+          const blob = await res.blob();
+          const fileName = `${formData.code}_qr_${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+          const result = await uploadToDrive(token, blob, fileName, selectedDriveFolder);
+          await makeFilePublic(token, result.id);
+          const drivePublicUrl = `https://lh3.googleusercontent.com/d/${result.id}`;
+          updatedFormData.qrCode = drivePublicUrl;
+        }
+      }
+
+      await onSave(updatedFormData);
+    } catch (err: any) {
+      console.error('Error auto-uploading to Google Drive:', err);
+      alert(err.message || 'Lỗi khi upload lên Google Drive.');
+    } finally {
+      setIsSavingAndUploading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -2996,17 +3063,6 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
                         <Image size={10} />
                         Ảnh đại diện sản phẩm
                       </label>
-                      {imagePreview && selectedDriveFolder && (
-                        <button
-                          type="button"
-                          disabled={isUploading.image}
-                          onClick={() => handleDriveUpload('image', imagePreview)}
-                          className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
-                        >
-                          {isUploading.image ? <Loader2 size={10} className="animate-spin" /> : <HardDrive size={10} />}
-                          LƯU VÀO DRIVE
-                        </button>
-                      )}
                     </div>
                     <div className="relative group">
                       <div className="w-full h-48 bg-gray-50 rounded-[20px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-[#9d171a]/30 group-hover:bg-[#9d171a]/5">
@@ -3056,17 +3112,6 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
                           <Zap size={10} />
                           TỰ ĐỘNG TẠO
                         </button>
-                        {qrPreview && selectedDriveFolder && (
-                          <button
-                            type="button"
-                            disabled={isUploading.qr}
-                            onClick={() => handleDriveUpload('qr', qrPreview)}
-                            className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-bold hover:bg-blue-100 transition-colors disabled:opacity-50"
-                          >
-                            {isUploading.qr ? <Loader2 size={10} className="animate-spin" /> : <HardDrive size={10} />}
-                            LƯU VÀO DRIVE
-                          </button>
-                        )}
                       </div>
                     </div>
                     <div className="relative group">
@@ -3108,9 +3153,17 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
           <button 
             type="submit"
             onClick={handleSubmit}
-            className="flex-[2] py-4 bg-[#9d171a] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-red-900/30 hover:bg-[#851215] transition-all active:scale-[0.98]"
+            disabled={isSavingAndUploading}
+            className="flex-[2] py-4 bg-[#9d171a] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-red-900/30 hover:bg-[#851215] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {editingProduct ? 'Cập nhật hệ thống' : 'Lưu sản phẩm mới'}
+            {isSavingAndUploading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Đang tải lên Drive & Lưu...</span>
+              </>
+            ) : (
+              <span>{editingProduct ? 'Cập nhật hệ thống' : 'Lưu sản phẩm mới'}</span>
+            )}
           </button>
         </div>
       </motion.div>
