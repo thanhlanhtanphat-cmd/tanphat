@@ -963,7 +963,7 @@ function AdminDashboard({
         setProducts((prev: Product[]) => prev.map((p: Product) => p.id === editingProduct.id ? updated : p));
       } else {
         const added = await supabaseService.addProduct(productData);
-        setProducts((prev: Product[]) => [...prev, added]);
+        setProducts((prev: Product[]) => [added, ...prev]);
       }
       setShowProductModal(false);
     } catch (err) {

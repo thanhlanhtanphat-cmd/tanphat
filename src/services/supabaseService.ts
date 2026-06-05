@@ -7,7 +7,7 @@ export const supabaseService = {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('id', { ascending: true });
+      .order('id', { ascending: false });
     if (error) throw error;
     return data.map(p => ({
       ...p,
