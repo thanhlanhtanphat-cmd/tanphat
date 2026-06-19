@@ -16,9 +16,27 @@ provider.setCustomParameters({
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
 
+// Helper to check if the session-stored Google OAuth token has expired (older than 55 minutes)
+const isTokenExpired = (): boolean => {
+  try {
+    const savedTimeStr = sessionStorage.getItem('google_drive_token_time');
+    if (!savedTimeStr) return false;
+    const savedTime = parseInt(savedTimeStr, 10);
+    const ageMs = Date.now() - savedTime;
+    return ageMs > 55 * 60 * 1000; // 55 minutes (expiring 5 mins early to avoid race conditions)
+  } catch (e) {
+    return false;
+  }
+};
+
 // Try to load token from session storage (less persistent than local storage, but survives refresh)
 try {
   cachedAccessToken = sessionStorage.getItem('google_drive_access_token');
+  if (cachedAccessToken && isTokenExpired()) {
+    cachedAccessToken = null;
+    sessionStorage.removeItem('google_drive_access_token');
+    sessionStorage.removeItem('google_drive_token_time');
+  }
 } catch (e) {
   console.warn('Could not access session storage for token');
 }
@@ -29,16 +47,16 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
+      if (cachedAccessToken && !isTokenExpired()) {
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
       } else {
-        // User is logged into Firebase but we don't have a Google token
+        // User is logged into Firebase but we don't have a valid/fresh Google token
         // We call onAuthFailure to let the UI know it needs to request auth specifically for Drive
+        clearAccessToken();
         if (onAuthFailure) onAuthFailure();
       }
     } else {
-      cachedAccessToken = null;
-      sessionStorage.removeItem('google_drive_access_token');
+      clearAccessToken();
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -57,6 +75,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     cachedAccessToken = credential.accessToken;
     try {
       sessionStorage.setItem('google_drive_access_token', cachedAccessToken);
+      sessionStorage.setItem('google_drive_token_time', Date.now().toString());
     } catch (e) {
       console.warn('Could not save token to session storage');
     }
@@ -76,16 +95,23 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
+  if (cachedAccessToken && isTokenExpired()) {
+    clearAccessToken();
+  }
   return cachedAccessToken;
 };
 
 export const clearAccessToken = () => {
   cachedAccessToken = null;
-  sessionStorage.removeItem('google_drive_access_token');
+  try {
+    sessionStorage.removeItem('google_drive_access_token');
+    sessionStorage.removeItem('google_drive_token_time');
+  } catch (e) {
+    console.warn('Could not remove google_drive_access_token from sessionStorage');
+  }
 };
 
 export const logout = async () => {
   await auth.signOut();
-  cachedAccessToken = null;
-  sessionStorage.removeItem('google_drive_access_token');
+  clearAccessToken();
 };

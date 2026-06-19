@@ -2824,7 +2824,17 @@ function ProductFormModal({ isOpen, onClose, onSave, editingProduct, suppliers, 
       await onSave(updatedFormData);
     } catch (err: any) {
       console.error('Error auto-uploading to Google Drive:', err);
-      alert(err.message || 'Lỗi khi upload lên Google Drive.');
+      const isAuthError = err.message?.includes('401') || 
+                         err.message?.includes('Unauthorized') || 
+                         err.message?.includes('invalid authentication credentials') ||
+                         err.message?.includes('invalid_grant');
+      
+      if (isAuthError) {
+        clearAccessToken();
+        alert('Phiên kết nối Google Drive đã hết hạn hoặc không hợp lệ. Vui lòng đóng cửa sổ này, quay về tab Google Drive và kết nối lại tài khoản.');
+      } else {
+        alert(err.message || 'Lỗi khi upload lên Google Drive.');
+      }
     } finally {
       setIsSavingAndUploading(false);
     }
